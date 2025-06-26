@@ -6,15 +6,23 @@ pipeline {
             reuseNode true
         }
     }
+
     stages {
-        stage('Build') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
             steps {
                 dir('/workspace') {
                     sh 'npm install'
                 }
             }
         }
-        stage('Test') {
+
+        stage('Run Tests') {
             steps {
                 dir('/workspace') {
                     sh 'npm test'
