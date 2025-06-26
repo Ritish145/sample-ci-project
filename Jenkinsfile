@@ -1,33 +1,29 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'
-            args '-v /C/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'
-            reuseNode true
-        }
+  agent {
+    docker {
+      image 'node:18'
+      args '-v /C/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace -w /workspace'
+      reuseNode true
+    }
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                dir('/workspace') {
-                    sh 'npm install'
-                }
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                dir('/workspace') {
-                    sh 'npm test'
-                }
-            }
-        }
+    stage('Install Dependencies') {
+      steps {
+        sh 'npm install'
+      }
     }
+
+    stage('Test') {
+      steps {
+        sh 'npm test'
+      }
+    }
+  }
 }
