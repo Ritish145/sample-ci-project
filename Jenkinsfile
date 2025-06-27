@@ -1,14 +1,24 @@
 pipeline {
     agent any
-    tools {
-        git 'Default'  // Must match the name you configured above
+    options {
+        skipDefaultCheckout true  // Only if you want custom checkout
     }
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [
+                        [$class: 'LocalBranch', localBranch: 'main'],  // Prevents detached HEAD
+                        [$class: 'CloneOption', depth: 1, shallow: true]  // Faster clones
+                    ],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/Ritish145/sample-ci-project.git'
+                    ]]
+                ])
             }
         }
-        // ... other stages
+        // Add your build/test stages here
     }
 }
