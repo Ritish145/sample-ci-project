@@ -3,8 +3,7 @@ pipeline {
     docker {
       image 'node:18'
       args '-v C:/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'
-      // Use Linux-style path inside container for working directory
-      // Don't specify -w with Windows-style path
+      reuseNode true
     }
   }
 
@@ -14,6 +13,7 @@ pipeline {
         checkout scm
       }
     }
+
     stage('Install Dependencies') {
       steps {
         dir('/workspace') {
@@ -21,6 +21,7 @@ pipeline {
         }
       }
     }
+
     stage('Test') {
       steps {
         dir('/workspace') {
