@@ -1,23 +1,15 @@
-<<<<<<< HEAD
-pipeline {
-  agent any
-
-  stages {
-    stage('Build') {
-      steps {
-        echo 'Building on main branch...'
-      }
-    }
-  }
-}
-=======
 pipeline {
   agent {
     docker {
       image 'node:18'
-      args '-v /c/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace -w /workspace'
+      args '-v /C/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'
       reuseNode true
     }
+  }
+
+  environment {
+    // Override the default workspace directory inside the container
+    WORKSPACE = '/workspace'
   }
 
   stages {
@@ -29,15 +21,18 @@ pipeline {
 
     stage('Install Dependencies') {
       steps {
-        bat 'npm install'
+        dir('/workspace') {
+          sh 'npm install'
+        }
       }
     }
 
     stage('Test') {
       steps {
-        bat 'npm test'
+        dir('/workspace') {
+          sh 'npm test'
+        }
       }
     }
   }
 }
->>>>>>> 8ec74d0
