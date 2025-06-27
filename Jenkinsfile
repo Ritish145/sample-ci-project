@@ -2,10 +2,13 @@ pipeline {
   agent {
     docker {
       image 'node:18'
-      // Mount Windows path to /workspace inside container (use lowercase drive letter and forward slashes)
-      args '-v /c/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace -w /workspace'
+      args '-v C:/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'  // Mount Windows path to /workspace in container
       reuseNode true
     }
+  }
+
+  environment {
+    WORKSPACE = '/workspace'   // Set WORKSPACE inside container to /workspace
   }
 
   stages {
@@ -16,13 +19,16 @@ pipeline {
     }
     stage('Install Dependencies') {
       steps {
-        // use sh, because we're inside a Linux container
-        sh 'npm install'
+        dir('/workspace') {
+          sh 'npm install'
+        }
       }
     }
     stage('Test') {
       steps {
-        sh 'npm test'
+        dir('/workspace') {
+          sh 'npm test'
+        }
       }
     }
   }
