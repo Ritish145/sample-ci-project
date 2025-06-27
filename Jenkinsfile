@@ -1,66 +1,56 @@
 pipeline {
     agent any
     
-    // Global pipeline configuration
     options {
-        skipDefaultCheckout(false)
+        skipDefaultCheckout(true)  // We'll handle checkout manually
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-    }
-
-    // Tools configuration (matches Jenkins Global Tools)
-    tools {
-        git 'Default'  // Must match your configured Git installation name
     }
 
     environment {
-        // Custom environment variables
-        PROJECT_DIR = "C:\\ProgramData\\Jenkins\\workspace\\sample-ci-project"
-        DOCKER_WORKSPACE = "/workspace"  // Linux path for containers
+        // Correct workspace path (note the .jenkins subfolder)
+        WORKSPACE_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\sample-ci-project"
+        // For Docker containers
+        DOCKER_WORKSPACE = "/workspace"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    extensions: [
-                        [$class: 'CloneOption', 
-                         depth: 1, 
-                         shallow: true,
-                         noTags: true,
-                         honorRefspec: true],
-                        [$class: 'LocalBranch',
-                         localBranch: 'main'],
-                        [$class: 'RelativeTargetDirectory',
-                         relativeTargetDir: 'src']
-                    ],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/Ritish145/sample-ci-project.git',
-                        credentialsId: 'github-creds'  // From Jenkins credentials store
-                    ]]
-                ])
+                script {
+                    // Manually handle checkout with proper path
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        extensions: [
+                            [$class: 'RelativeTargetDirectory', 
+                             relativeTargetDir: "${env.WORKSPACE}"],
+                            [$class: 'CloneOption',
+                             depth: 1,
+                             shallow: true]
+                        ],
+                        userRemoteConfigs: [[
+                            url: 'https://github.com/Ritish145/sample-ci-project.git'
+                            // Remove credentialsId if not needed
+                        ]]
+                    ])
+                }
             }
         }
 
         stage('Build') {
             steps {
                 script {
-                    // Windows batch commands
+                    // Verify correct workspace
                     bat """
-                        echo "Building in ${PROJECT_DIR}"
-                        cd "${PROJECT_DIR}"
-                        dir  # Verify contents
+                        echo "Building in ${env.WORKSPACE}"
+                        cd /d "${env.WORKSPACE}"
+                        dir
                     """
                     
-                    // Example for Docker builds
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-creds') {
-                        docker.image('node:18').inside("""
-                            -v "${PROJECT_DIR}:${DOCKER_WORKSPACE}"
-                            -w "${DOCKER_WORKSPACE}"
-                        """) {
+                    // Example Docker integration
+                    docker.withRegistry('https://registry.hub.docker.com') {
+                        docker.image('node:18').inside("-v ${env.WORKSPACE}:${env.DOCKER_WORKSPACE}") {
                             sh 'npm install'
                             sh 'npm run build'
                         }
@@ -72,9 +62,8 @@ pipeline {
         stage('Test') {
             steps {
                 bat """
-                    cd "${PROJECT_DIR}"
+                    cd /d "${env.WORKSPACE}"
                     echo "Running tests..."
-                    # Add your test commands here
                 """
             }
         }
@@ -82,29 +71,10 @@ pipeline {
 
     post {
         always {
-            script {
-                // Clean workspace while preserving context
-                node('master') {
-                    cleanWs(
-                        cleanWhenAborted: true,
-                        cleanWhenFailure: true,
-                        cleanWhenNotBuilt: true,
-                        cleanWhenSuccess: true,
-                        deleteDirs: true
-                    )
-                }
-            }
-        }
-        success {
-            slackSend(
-                color: 'good',
-                message: "SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
-            )
-        }
-        failure {
-            slackSend(
-                color: 'danger',
-                message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+            cleanWs(
+                cleanWhenAborted: true,
+                cleanWhenFailure: true,
+                cleanWhenSuccess: true
             )
         }
     }
