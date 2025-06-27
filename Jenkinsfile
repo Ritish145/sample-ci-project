@@ -5,52 +5,55 @@ pipeline {
         skipDefaultCheckout(true)  // We'll handle checkout manually
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
+        retry(2)  // Retry failed builds once
     }
 
     environment {
-        // Correct workspace path (note the .jenkins subfolder)
-        WORKSPACE_PATH = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\sample-ci-project"
-        // For Docker containers
+        // Windows paths (double backslashes)
+        WIN_WORKSPACE = "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\sample-ci-project"
+        // Linux paths (for Docker)
         DOCKER_WORKSPACE = "/workspace"
+        // Git configuration
+        GIT_TOOL = 'Default'  // Must match Jenkins Global Tool config
     }
 
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    // Manually handle checkout with proper path
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: '*/main']],
-                        extensions: [
-                            [$class: 'RelativeTargetDirectory', 
-                             relativeTargetDir: "${env.WORKSPACE}"],
-                            [$class: 'CloneOption',
-                             depth: 1,
-                             shallow: true]
-                        ],
-                        userRemoteConfigs: [[
-                            url: 'https://github.com/Ritish145/sample-ci-project.git'
-                            // Remove credentialsId if not needed
-                        ]]
-                    ])
-                }
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [
+                        [$class: 'CloneOption',
+                         depth: 1,
+                         shallow: true,
+                         noTags: true],
+                        [$class: 'RelativeTargetDirectory',
+                         relativeTargetDir: '.']
+                    ],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/Ritish145/sample-ci-project.git'
+                    ]]
+                ])
             }
         }
 
         stage('Build') {
             steps {
                 script {
-                    // Verify correct workspace
+                    // Verify workspace (Windows)
                     bat """
-                        echo "Building in ${env.WORKSPACE}"
-                        cd /d "${env.WORKSPACE}"
+                        echo "Workspace: %WIN_WORKSPACE%"
+                        cd /d "%WIN_WORKSPACE%"
                         dir
                     """
-                    
-                    // Example Docker integration
+
+                    // Docker build (Linux container)
                     docker.withRegistry('https://registry.hub.docker.com') {
-                        docker.image('node:18').inside("-v ${env.WORKSPACE}:${env.DOCKER_WORKSPACE}") {
+                        docker.image('node:18').inside(
+                            "-v ${env.WIN_WORKSPACE}:${env.DOCKER_WORKSPACE} " +
+                            "-w ${env.DOCKER_WORKSPACE}"
+                        ) {
                             sh 'npm install'
                             sh 'npm run build'
                         }
@@ -61,20 +64,42 @@ pipeline {
 
         stage('Test') {
             steps {
-                bat """
-                    cd /d "${env.WORKSPACE}"
-                    echo "Running tests..."
-                """
+                script {
+                    docker.image('node:18').inside(
+                        "-v ${env.WIN_WORKSPACE}:${env.DOCKER_WORKSPACE} " +
+                        "-w ${env.DOCKER_WORKSPACE}"
+                    ) {
+                        sh 'npm test'
+                    }
+                }
             }
         }
     }
 
     post {
         always {
-            cleanWs(
-                cleanWhenAborted: true,
-                cleanWhenFailure: true,
-                cleanWhenSuccess: true
+            // Clean workspace but preserve important artifacts
+            script {
+                archiveArtifacts artifacts: '**/build/**/*', allowEmptyArchive: true
+                junit '**/test-results/**/*.xml'  // If using JUnit reports
+                cleanWs(
+                    cleanWhenAborted: true,
+                    cleanWhenFailure: true,
+                    cleanWhenSuccess: true,
+                    deleteDirs: true
+                )
+            }
+        }
+        success {
+            slackSend(
+                color: 'good',
+                message: "SUCCESS: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
+            )
+        }
+        failure {
+            slackSend(
+                color: 'danger',
+                message: "FAILED: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
             )
         }
     }
