@@ -1,21 +1,35 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18-windowsservercore'
-            args '--isolation=hyperv'  // or '--isolation=process' for Windows Server 2019+
-        }
+  agent {
+    docker {
+      image 'node:18'
+      args '-v C:/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'  // Mount Windows path to /workspace in container
+      reuseNode true
     }
-    stages {
-        stage('Build') {
-            steps {
-                bat 'npm install'
-                bat 'npm run build'
-            }
-        }
-        stage('Test') {
-            steps {
-                bat 'npm test'
-            }
-        }
+  }
+
+  environment {
+    WORKSPACE = '/workspace'   // Set WORKSPACE inside container to /workspace
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
     }
+    stage('Install Dependencies') {
+      steps {
+        dir('/workspace') {
+          sh 'npm install'
+        }
+      }
+    }
+    stage('Test') {
+      steps {
+        dir('/workspace') {
+          sh 'npm test'
+        }
+      }
+    }
+  }
 }
