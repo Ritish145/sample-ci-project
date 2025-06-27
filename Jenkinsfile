@@ -2,7 +2,7 @@ pipeline {
   agent {
     docker {
       image 'node:18'
-      args '-v /c/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'
+      args '-v /c/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace -w /workspace'
       reuseNode true
     }
   }
@@ -10,23 +10,23 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        checkout scm
+        // Explicit checkout with Git tool specified
+        checkout([$class: 'GitSCM', 
+                  branches: [[name: '*/main']], 
+                  userRemoteConfigs: [[url: 'https://github.com/Ritish145/sample-ci-project.git']], 
+                  gitTool: 'Default'])
       }
     }
 
     stage('Install Dependencies') {
       steps {
-        dir('/workspace') {
-          sh 'npm install'
-        }
+        sh 'npm install'
       }
     }
 
     stage('Test') {
       steps {
-        dir('/workspace') {
-          sh 'npm test'
-        }
+        sh 'npm test'
       }
     }
   }
