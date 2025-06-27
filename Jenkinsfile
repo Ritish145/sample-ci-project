@@ -1,3 +1,10 @@
-def proc = "git --version".execute()
-proc.waitFor()
-println proc.in.text
+pipeline {
+  agent any
+  stages {
+    stage('Check Git Version') {
+      steps {
+        sh 'git --version'   // or 'bat' for Windows
+      }
+    }
+  }
+}
