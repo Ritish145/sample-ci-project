@@ -2,7 +2,7 @@ pipeline {
   agent {
     docker {
       image 'node:18'
-      args '-v /C/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace -w /workspace'
+      args '-v C:/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:C:/workspace -w C:/workspace'
       reuseNode true
     }
   }
