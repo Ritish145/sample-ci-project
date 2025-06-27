@@ -1,20 +1,24 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'
-            args '-v /c/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace -w /workspace'
-        }
+    agent any
+    
+    tools {
+        git 'Default'  // Matches the name you configured in Global Tools
     }
+
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                sh 'npm install'  // Example command (adjust as needed)
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'your-credentials-id',  // From Jenkins credentials
+                        url: 'https://github.com/Ritish145/sample-ci-project.git'
+                    ]]
+                ])
             }
         }
-    }
-    post {
-        always {
-            cleanWs()  // Move inside a `node` block if still failing
-        }
+        // Add your other stages here
     }
 }
