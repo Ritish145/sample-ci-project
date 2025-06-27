@@ -15,11 +15,23 @@ pipeline {
   agent {
     docker {
       image 'node:18'
+<<<<<<< HEAD
       args '-v /c/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace -w /workspace'
+=======
+      args '-v /C/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'
+>>>>>>> 8ec74d0 (Add Jenkinsfile.txt)
       reuseNode true
     }
   }
 
+<<<<<<< HEAD
+=======
+  environment {
+    // Override the default workspace directory inside the container
+    WORKSPACE = '/workspace'
+  }
+
+>>>>>>> 8ec74d0 (Add Jenkinsfile.txt)
   stages {
     stage('Checkout') {
       steps {
@@ -29,13 +41,25 @@ pipeline {
 
     stage('Install Dependencies') {
       steps {
+<<<<<<< HEAD
         bat 'npm install'
+=======
+        dir('/workspace') {
+          sh 'npm install'
+        }
+>>>>>>> 8ec74d0 (Add Jenkinsfile.txt)
       }
     }
 
     stage('Test') {
       steps {
+<<<<<<< HEAD
         bat 'npm test'
+=======
+        dir('/workspace') {
+          sh 'npm test'
+        }
+>>>>>>> 8ec74d0 (Add Jenkinsfile.txt)
       }
     }
   }
