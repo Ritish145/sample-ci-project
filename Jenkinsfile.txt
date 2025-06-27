@@ -2,14 +2,10 @@ pipeline {
   agent {
     docker {
       image 'node:18'
-      args '-v /C/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'
-      reuseNode true
+      args '-v C:/ProgramData/Jenkins/.jenkins/workspace/sample-ci-project:/workspace'
+      // Use Linux-style path inside container for working directory
+      // Don't specify -w with Windows-style path
     }
-  }
-
-  environment {
-    // Override the default workspace directory inside the container
-    WORKSPACE = '/workspace'
   }
 
   stages {
@@ -18,19 +14,17 @@ pipeline {
         checkout scm
       }
     }
-
     stage('Install Dependencies') {
       steps {
         dir('/workspace') {
-          sh 'npm install'
+          bat 'npm install'
         }
       }
     }
-
     stage('Test') {
       steps {
         dir('/workspace') {
-          sh 'npm test'
+          bat 'npm test'
         }
       }
     }
