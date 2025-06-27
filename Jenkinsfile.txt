@@ -1,3 +1,16 @@
+<<<<<<< HEAD
+pipeline {
+  agent any
+
+  stages {
+    stage('Build') {
+      steps {
+        echo 'Building on main branch...'
+      }
+    }
+  }
+}
+=======
 pipeline {
   agent {
     docker {
@@ -27,3 +40,4 @@ pipeline {
     }
   }
 }
+>>>>>>> 8ec74d0
