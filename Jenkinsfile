@@ -1,10 +1,14 @@
 pipeline {
     agent any
+    tools {
+        git 'Default'  // Must match the name you configured above
+    }
     stages {
-        stage('Test Git') {
+        stage('Checkout') {
             steps {
-                bat 'git --version'
+                checkout scm
             }
         }
+        // ... other stages
     }
 }
